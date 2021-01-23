@@ -23,3 +23,6 @@ target_link_libraries(05_pass_by_ref_and_detach pthread)
 
 add_executable(06_ownership 06_ownership.cpp)
 target_link_libraries(06_ownership pthread)
+
+add_executable(07_useful_api 07_useful_api.cpp)
+target_link_libraries(07_useful_api pthread)

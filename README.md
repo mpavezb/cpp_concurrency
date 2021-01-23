@@ -76,6 +76,21 @@ Delayed Joins and Exceptions:
 - Move enabled and Copy Disabled (see: [example](src/section_1/06_ownership.cpp)).
 - Class/Fn arguments are forwarded. Use `std::ref` to pass by reference. (see: [example](src/section_1/04_thread_parameters.cpp), [example](src/section_1/05_pass_by_ref_and_detach.cpp)).
 
+Useful API ([example](src/section_1/07_useful_api.cpp)):
+- [get_id()](https://en.cppreference.com/w/cpp/thread/thread/get_id): Unique id for *active* threads, contant otherwise. The type `std::thread::id` is designed to be used as a key in associative containers.
+- [sleep_for()](https://en.cppreference.com/w/cpp/thread/sleep_for): Blocks execution for *at least* the specified duration. It may block longer due to scheduling or resource contention delays.
+- [yield()](https://en.cppreference.com/w/cpp/thread/yield): Hints the scheduler to allow other threads to run, and re-inserts the thread into the scheduling queue.
+- [hardware_concurrency()](https://en.cppreference.com/w/cpp/thread/thread/hardware_concurrency): Returns the number of concurrent threads supported by the implementation (logical cores). The value should be considered only a hint.
+
+
+## TODO
+
+- jthread
+- futures
+- latches and barriers
+- mutex
+- C++20 addons
+
 ## Building the code
 
 ```bash
