@@ -29,3 +29,6 @@ target_link_libraries(06_ownership pthread)
 
 add_executable(07_useful_api 07_useful_api.cpp)
 target_link_libraries(07_useful_api pthread)
+
+add_executable(08_parallel_accumulate 08_parallel_accumulate.cpp)
+target_link_libraries(08_parallel_accumulate pthread)

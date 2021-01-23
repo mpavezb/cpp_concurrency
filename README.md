@@ -84,6 +84,11 @@ Useful API ([example](src/section_1/07_useful_api.cpp)):
 - [yield()](https://en.cppreference.com/w/cpp/thread/yield): Hints the scheduler to allow other threads to run, and re-inserts the thread into the scheduling queue.
 - [hardware_concurrency()](https://en.cppreference.com/w/cpp/thread/thread/hardware_concurrency): Returns the number of concurrent threads supported by the implementation (logical cores). The value should be considered only a hint.
 
+More Examples:
+- Exercise 1: [code](src/section_1/exercise_1.cpp)
+- Exercise 2: [code](src/section_1/exercise_2.cpp)
+- Exercise 3: [code](src/section_1/exercise_3.cpp)
+- Parallel Accumulate: [code](src/section_1/08_parallel_accumulate.cpp).
 
 ## TODO
 
