@@ -1,0 +1,19 @@
+project(section_1)
+
+add_executable(exercise_1 exercise_1.cpp)
+target_link_libraries(exercise_1 pthread)
+
+add_executable(exercise_2 exercise_2.cpp)
+target_link_libraries(exercise_2 pthread)
+
+add_executable(01_joinability 01_joinability.cpp)
+target_link_libraries(01_joinability pthread)
+
+add_executable(02_detach 02_detach.cpp)
+target_link_libraries(02_detach pthread)
+
+add_executable(03_exceptions 03_exceptions.cpp)
+target_link_libraries(03_exceptions pthread)
+
+add_executable(04_thread_parameters 04_thread_parameters.cpp)
+target_link_libraries(04_thread_parameters pthread)

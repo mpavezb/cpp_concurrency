@@ -1,5 +1,12 @@
 # cpp_concurrency
- Code for the Modern C++ Concurrency in Depth course from Udemy. 
+
+Code for the Modern C++ Concurrency in Depth course from Udemy. 
+
+## Resources
+
+- https://en.cppreference.com/w/cpp/thread/thread/thread
+- https://en.cppreference.com/w/cpp/utility/functional/ref
+- Course source code: https://github.com/kasunindikaliyanage/cpp_concurrency_masterclass
 
 ## Concepts
 
@@ -33,6 +40,39 @@ GPGPU (General Purpose GPU):
 - Is the use of a GPU to handle tasks a CPU would do.
 - The idea is to handle matrix-like data using the GPU.
 - See: https://en.wikipedia.org/wiki/General-purpose_computing_on_graphics_processing_units
+
+## Threads
+
+Thread Object: A properly constructed thread object represents an active thread of execution in hardware level.
+
+### Thread Management
+
+Joinability: 
+- *Properly constructed* thread objects are *joinable*. Default constructed are *non-joinable*!.
+- Calling the `join` or `detach` makes the object *non-joinable*.
+- If `join` or `detach` are not called, then `std::terminate` will be called by the destructor.
+- Programs having calls to `std::terminate` (aborts program) are referred as *unsafe*.
+
+`join()`:
+- Introduces a *synchronization point* between the thread and the caller.
+- It blocks the execution of the caller, until the thread execution finishes.
+
+`detach()`:
+- Separates the thread from the thread object, allowing the thread to continue independenly.
+- Detached threads can operate even after the launcher has finished. Notice that detached threads are *non-joinable*, thus they can be safely destroyed.
+- Allocated resources will be freed once the thread finishes.
+
+Delayed Joins and Exceptions:
+- We might need to delay the call to `join` to not block the thread so early. Notice that we can call `detach` as soon as we want!.
+- If an exception is thrown before `join`, `std::terminate` might be called!.
+- RAII can be used to handle the thread resource and join when necessary.
+
+
+Thread Constructor:
+1. `thread() noexcept;`: Default creates non-joinable thread.
+2. `thread( thread&& other ) noexcept;` Moves thread.
+3. `template< class Function, class... Args > explicit thread( Function&& f, Args&&... args );`: Arguments are forwarded to the constructor. Use `std::ref` to pass by reference.
+4. `thread( const thread& ) = delete;` Non-Copiable.
 
 ## Building the code
 
