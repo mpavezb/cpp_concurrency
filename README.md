@@ -52,6 +52,7 @@ Joinability:
 - Calling the `join` or `detach` makes the object *non-joinable*.
 - If `join` or `detach` are not called, then `std::terminate` will be called by the destructor.
 - Programs having calls to `std::terminate` (aborts program) are referred as *unsafe*.
+- See: [example](src/section_1/01_joinability.cpp).
 
 `join()`:
 - Introduces a *synchronization point* between the thread and the caller.
@@ -61,16 +62,19 @@ Joinability:
 - Separates the thread from the thread object, allowing the thread to continue independenly.
 - Detached threads can operate even after the launcher has finished. Notice that detached threads are *non-joinable*, thus they can be safely destroyed.
 - Allocated resources will be freed once the thread finishes.
+- Be wary of passing by reference to detached threads!. When owner finishes, reference will dangle.
+- See: [example](src/section_1/02_detach.cpp).
 
 Delayed Joins and Exceptions:
 - We might need to delay the call to `join` to not block the thread so early. Notice that we can call `detach` as soon as we want!.
 - If an exception is thrown before `join`, `std::terminate` might be called!.
 - RAII can be used to handle the thread resource and join when necessary.
-
+- See: [example](src/section_1/03_exceptions.cpp).
 
 [Thread Constructor](https://en.cppreference.com/w/cpp/thread/thread/thread):
-- Default creates non-joinable thread. Move enabled. Copy Disabled.
-- Class/Fn arguments are forwarded. Use `std::ref` to pass by reference.
+- Default creates non-joinable thread.
+- Move enabled and Copy Disabled (see: [example](src/section_1/06_ownership.cpp)).
+- Class/Fn arguments are forwarded. Use `std::ref` to pass by reference. (see: [example](src/section_1/04_thread_parameters.cpp), [example](src/section_1/05_pass_by_ref_and_detach.cpp)).
 
 ## Building the code
 
@@ -78,7 +82,8 @@ Delayed Joins and Exceptions:
 sudo apt install gcc-10 g++-10 # C++20
 
 mkdir -p build && cd build
-cmake -D CMAKE_C_COMPILER=gcc-10 -D CMAKE_CXX_COMPILER=g++-10 .. && make
+cmake .. && make && src/section_1/01_joinability
 
--std=c++20 -fcoroutines -pthread
+#cmake -D CMAKE_C_COMPILER=gcc-10 -D CMAKE_CXX_COMPILER=g++-10 .. && make
+#-std=c++20 -fcoroutines -pthread
 ```
