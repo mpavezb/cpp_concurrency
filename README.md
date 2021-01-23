@@ -4,7 +4,7 @@ Code for the Modern C++ Concurrency in Depth course from Udemy.
 
 ## Resources
 
-- https://en.cppreference.com/w/cpp/thread/thread/thread
+- https://en.cppreference.com/w/cpp/thread/thread
 - https://en.cppreference.com/w/cpp/utility/functional/ref
 - Course source code: https://github.com/kasunindikaliyanage/cpp_concurrency_masterclass
 
@@ -68,11 +68,9 @@ Delayed Joins and Exceptions:
 - RAII can be used to handle the thread resource and join when necessary.
 
 
-Thread Constructor:
-1. `thread() noexcept;`: Default creates non-joinable thread.
-2. `thread( thread&& other ) noexcept;` Moves thread.
-3. `template< class Function, class... Args > explicit thread( Function&& f, Args&&... args );`: Arguments are forwarded to the constructor. Use `std::ref` to pass by reference.
-4. `thread( const thread& ) = delete;` Non-Copiable.
+[Thread Constructor](https://en.cppreference.com/w/cpp/thread/thread/thread):
+- Default creates non-joinable thread. Move enabled. Copy Disabled.
+- Class/Fn arguments are forwarded. Use `std::ref` to pass by reference.
 
 ## Building the code
 
