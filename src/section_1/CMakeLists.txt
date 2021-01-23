@@ -6,6 +6,9 @@ target_link_libraries(exercise_1 pthread)
 add_executable(exercise_2 exercise_2.cpp)
 target_link_libraries(exercise_2 pthread)
 
+add_executable(exercise_3 exercise_3.cpp)
+target_link_libraries(exercise_3 pthread)
+
 add_executable(01_joinability 01_joinability.cpp)
 target_link_libraries(01_joinability pthread)
 

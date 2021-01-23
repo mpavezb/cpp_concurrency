@@ -60,7 +60,9 @@ Joinability:
 
 `detach()`:
 - Separates the thread from the thread object, allowing the thread to continue independenly.
-- Detached threads can operate even after the launcher has finished. Notice that detached threads are *non-joinable*, thus they can be safely destroyed.
+- Detached threads may outlive parents.
+- Detached threads are *non-joinable*, thus they can be safely destroyed.
+- Detached threads usually cannot outlive the `main()` function, as the OS terminates all threads on exit [stackoverflow.com](https://stackoverflow.com/questions/19744250/what-happens-to-a-detached-thread-when-main-exits).
 - Allocated resources will be freed once the thread finishes.
 - Be wary of passing by reference to detached threads!. When owner finishes, reference will dangle.
 - See: [example](src/section_1/02_detach.cpp).
