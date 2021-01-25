@@ -79,11 +79,11 @@ cmake .. && make && src/section_1/01_joinability
 - Programs having calls to `std::terminate` (aborts program) are referred as *unsafe*.
 - See: [example](src/section_1/01_joinability.cpp).
 
-**Join Function** [std::thread::join()](https://en.cppreference.com/w/cpp/thread/thread/join):
+**Join Function** [join()](https://en.cppreference.com/w/cpp/thread/thread/join):
 - Introduces a *synchronization point* between the thread and the caller.
 - It blocks the execution of the caller, until the thread execution finishes.
 
-**Detach function** [std::thread::detach()](https://en.cppreference.com/w/cpp/thread/thread/detach):
+**Detach function** [detach()](https://en.cppreference.com/w/cpp/thread/thread/detach):
 - Separates the thread from the thread object, allowing the thread to continue independenly.
 - Detached threads may outlive parents.
 - Detached threads are *non-joinable*, thus they can be safely destroyed.
@@ -98,16 +98,16 @@ cmake .. && make && src/section_1/01_joinability
 - RAII can be used to handle the thread resource and join when necessary.
 - See: [example](src/section_1/03_exceptions.cpp).
 
-**Thread Constructor** [std::thread::thread()](https://en.cppreference.com/w/cpp/thread/thread/thread):
+**Thread Constructor** [thread()](https://en.cppreference.com/w/cpp/thread/thread/thread):
 - Default creates non-joinable thread.
 - Move enabled and Copy Disabled (see: [example](src/section_1/06_ownership.cpp)).
 - Class/Fn arguments are forwarded. Use `std::ref` to pass by reference. (see: [example](src/section_1/04_thread_parameters.cpp), [example](src/section_1/05_pass_by_ref_and_detach.cpp)).
 
 **Useful API** ([example](src/section_1/07_useful_api.cpp)):
-- [std::thread::get_id()](https://en.cppreference.com/w/cpp/thread/thread/get_id): Unique id for *active* threads, contant otherwise. The type `std::thread::id` is designed to be used as a key in associative containers.
+- [get_id()](https://en.cppreference.com/w/cpp/thread/thread/get_id): Unique id for *active* threads, contant otherwise. The type `std::thread::id` is designed to be used as a key in associative containers.
 - [std::this_thread::sleep_for()](https://en.cppreference.com/w/cpp/thread/sleep_for): Blocks execution for *at least* the specified duration. It may block longer due to scheduling or resource contention delays.
 - [std::this_thread::yield()](https://en.cppreference.com/w/cpp/thread/yield): Hints the scheduler to allow other threads to run, and re-inserts the thread into the scheduling queue.
-- [std::thread::hardware_concurrency()](https://en.cppreference.com/w/cpp/thread/thread/hardware_concurrency): Returns the number of concurrent threads supported by the implementation (logical cores). The value should be considered only a hint.
+- [hardware_concurrency()](https://en.cppreference.com/w/cpp/thread/thread/hardware_concurrency): Returns the number of concurrent threads supported by the implementation (logical cores). The value should be considered only a hint.
 - [thread_local](https://en.cppreference.com/w/c/thread/thread_local): Macro specifying that a variable has thread-local storage duration; Each thread has its own, distinct, object. Initialization and destruction are bound to the thread.
 
 
