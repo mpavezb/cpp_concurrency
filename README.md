@@ -8,44 +8,69 @@ Code for the Modern C++ Concurrency in Depth course from Udemy.
 - https://en.cppreference.com/w/cpp/utility/functional/ref
 - Course source code: https://github.com/kasunindikaliyanage/cpp_concurrency_masterclass
 
-## Concepts
+## TODO
 
-Process: Is defined by its instructions and current state.
+- jthread
+- futures
+- latches and barriers
+- C++20 addons
 
-Context Switching:
+## Building the code
+
+```bash
+sudo apt install gcc-10 g++-10 # C++20
+
+mkdir -p build && cd build
+cmake .. && make && src/section_1/01_joinability
+
+#cmake -D CMAKE_C_COMPILER=gcc-10 -D CMAKE_CXX_COMPILER=g++-10 .. && make
+#-std=c++20 -fcoroutines -pthread
+```
+
+## C++ Thread Support Library
+
+- [Basic Concepts](#basic-concepts).
+- [Thread Management](#thread-management).
+- [Locking Mechanisms](#locking-mechanisms).
+- [Condition Variables and Futures](#condition-variables-and-futures).
+
+### Basic Concepts
+
+**Process:** Is defined by its instructions and current state.
+
+**Context Switching:**
 - The OS can store the state of a process or thread, so that it can be restored and resume execution at a later point. 
 - This allows multiple processes to share a single central processing unit (CPU), and is an essential feature of a multitasking operating system.
 
-Round-Robin Scheduling:
+**Round-Robin Scheduling:**
 - Assigns time-slots to each process in equal portions and circular order, having no priorities.
 - Context switching is performed when a time slot is completed.
 - Simple and starvation-free.
 - See: https://en.wikipedia.org/wiki/Round-robin_scheduling
 
-Task- and Data- Level Parallelism:
+**Task- and Data- Level Parallelism:**
 - Task-Level: Threads perform different tasks (using the same or different data).
 - Data-Level: Threads perform the same task on different data.
 
-Parallelism vs Concurrency:
+**Parallelism vs Concurrency:**
 - Parallelism: When each process/thread runs on a dedicated processor at the same time.
 - Concurrency: Emulated parallelism based on context-switching (sequencial execution!).
 - True parallelism is difficult to achieve, due to the low number of cores usually available.
 
-Heterogeneous Computing:
+**Heterogeneous Computing:**
 - Refers to systems that use more than one kind of processor or cores. 
 - These systems gain performance or energy efficiency by using specialized hardware.
 - https://en.wikipedia.org/wiki/Heterogeneous_computing
 
-GPGPU (General Purpose GPU):
+**GPGPU (General Purpose GPU):**
 - Is the use of a GPU to handle tasks a CPU would do.
 - The idea is to handle matrix-like data using the GPU.
 - See: https://en.wikipedia.org/wiki/General-purpose_computing_on_graphics_processing_units
 
-## Threads
-
-Thread Object: A properly constructed thread object represents an active thread of execution in hardware level.
 
 ### Thread Management
+
+**Thread Object**: A properly constructed thread object represents an active thread of execution in hardware level.
 
 **Joinability**:
 - *Properly constructed* thread objects are *joinable*. Default constructed are *non-joinable*!.
@@ -54,11 +79,11 @@ Thread Object: A properly constructed thread object represents an active thread 
 - Programs having calls to `std::terminate` (aborts program) are referred as *unsafe*.
 - See: [example](src/section_1/01_joinability.cpp).
 
-`join()`:
+**Join Function** [std::thread::join()](https://en.cppreference.com/w/cpp/thread/thread/join):
 - Introduces a *synchronization point* between the thread and the caller.
 - It blocks the execution of the caller, until the thread execution finishes.
 
-`detach()`:
+**Detach function** [std::thread::detach()](https://en.cppreference.com/w/cpp/thread/thread/detach):
 - Separates the thread from the thread object, allowing the thread to continue independenly.
 - Detached threads may outlive parents.
 - Detached threads are *non-joinable*, thus they can be safely destroyed.
@@ -67,22 +92,22 @@ Thread Object: A properly constructed thread object represents an active thread 
 - Be wary of passing by reference to detached threads!. When owner finishes, reference will dangle.
 - See: [example](src/section_1/02_detach.cpp).
 
-Delayed Joins and Exceptions:
+**Delayed Joins and Exceptions**:
 - We might need to delay the call to `join` to not block the thread so early. Notice that we can call `detach` as soon as we want!.
 - If an exception is thrown before `join`, `std::terminate` might be called!.
 - RAII can be used to handle the thread resource and join when necessary.
 - See: [example](src/section_1/03_exceptions.cpp).
 
-[Thread Constructor](https://en.cppreference.com/w/cpp/thread/thread/thread):
+**Thread Constructor** [std::thread::thread()](https://en.cppreference.com/w/cpp/thread/thread/thread):
 - Default creates non-joinable thread.
 - Move enabled and Copy Disabled (see: [example](src/section_1/06_ownership.cpp)).
 - Class/Fn arguments are forwarded. Use `std::ref` to pass by reference. (see: [example](src/section_1/04_thread_parameters.cpp), [example](src/section_1/05_pass_by_ref_and_detach.cpp)).
 
 **Useful API** ([example](src/section_1/07_useful_api.cpp)):
-- [get_id()](https://en.cppreference.com/w/cpp/thread/thread/get_id): Unique id for *active* threads, contant otherwise. The type `std::thread::id` is designed to be used as a key in associative containers.
-- [sleep_for()](https://en.cppreference.com/w/cpp/thread/sleep_for): Blocks execution for *at least* the specified duration. It may block longer due to scheduling or resource contention delays.
-- [yield()](https://en.cppreference.com/w/cpp/thread/yield): Hints the scheduler to allow other threads to run, and re-inserts the thread into the scheduling queue.
-- [hardware_concurrency()](https://en.cppreference.com/w/cpp/thread/thread/hardware_concurrency): Returns the number of concurrent threads supported by the implementation (logical cores). The value should be considered only a hint.
+- [std::thread::get_id()](https://en.cppreference.com/w/cpp/thread/thread/get_id): Unique id for *active* threads, contant otherwise. The type `std::thread::id` is designed to be used as a key in associative containers.
+- [std::this_thread::sleep_for()](https://en.cppreference.com/w/cpp/thread/sleep_for): Blocks execution for *at least* the specified duration. It may block longer due to scheduling or resource contention delays.
+- [std::this_thread::yield()](https://en.cppreference.com/w/cpp/thread/yield): Hints the scheduler to allow other threads to run, and re-inserts the thread into the scheduling queue.
+- [std::thread::hardware_concurrency()](https://en.cppreference.com/w/cpp/thread/thread/hardware_concurrency): Returns the number of concurrent threads supported by the implementation (logical cores). The value should be considered only a hint.
 - [thread_local](https://en.cppreference.com/w/c/thread/thread_local): Macro specifying that a variable has thread-local storage duration; Each thread has its own, distinct, object. Initialization and destruction are bound to the thread.
 
 
@@ -119,8 +144,7 @@ The most common problem in multithreading implementations are broken invariants 
 - The [std::unique_lock](https://en.cppreference.com/w/cpp/thread/unique_lock) is similar to `std::lock_guard`, but it does not have to acquire the lock during construction. It also allows time-constrained locking, recursive locking, conditional locking, and ownership transfer. In particular, the lock deferral allows acquiring multiple locks later using the `std::lock` function, as if `std::scoped_lock` were used.
 - [mutex, lock_guard, and scoped_lock examples](src/section_2/01_mutex.cpp), [unique_lock examples](src/section_2/05_unique_lock.cpp).
 
-
-[STL and Thread Safety](https://en.cppreference.com/w/cpp/container):
+**STL and Thread Safety** [STL container](https://en.cppreference.com/w/cpp/container):
 1. All container functions can be called concurrently by different threads on different containers.
 2. All `const` member functions can be called concurrently by different threads on the same container. Operations like `begin()`, `end()`, `rbegin()`, `rend()`, `front()`, `back()`, `data()`, `find()`, `lower_bound()`, `upper_bound()`, `equal_range()`, `at()`, and, except in associative containers, `operator[]`, behave as const for the purposes of thread safety.
 3. Different elements in the same container can be modified concurrently by different threads, except for the elements of `std::vector<bool>`.
@@ -130,29 +154,10 @@ The most common problem in multithreading implementations are broken invariants 
 
 ### Condition Variables and Futures
 
-[std::condition_variable](https://en.cppreference.com/w/cpp/thread/condition_variable) is a synchronization primitive used to block one or multiple threads until another thread modifies the variable and notifies to it:
+**Condition Variables**:  [std::condition_variable](https://en.cppreference.com/w/cpp/thread/condition_variable) is a synchronization primitive used to block one or multiple threads until another thread modifies the variable and notifies to it:
 - The notifier thread has to acquire a mutex to modify the variable (even if it is atomic). Then, it must execute `notify_one` or `notify_all` (no lock needed).
 - Waiting threads must acquire the same mutex and:
   1. Check the condition. Execute `wait`, `wait_for`, or `wait_until`, atomically releasing the mutex. And awake on timeout, notification, or [spurious wakeup](https://en.wikipedia.org/wiki/Spurious_wakeup). Finally the condition must be checked to continue waiting or resume if needed.
   2. Or just use the predicated overload of `wait`, `wait_for`, and `wait_until`.
 - For maximum efficiency, `std::condition_variable` works only with `std::unique_lock<std::mutex>`, while `std::condition_variable_any` works only with any lock.
 - [example](src/section_3/01_condition_variable.cpp).
-
-## TODO
-
-- jthread
-- futures
-- latches and barriers
-- C++20 addons
-
-## Building the code
-
-```bash
-sudo apt install gcc-10 g++-10 # C++20
-
-mkdir -p build && cd build
-cmake .. && make && src/section_1/01_joinability
-
-#cmake -D CMAKE_C_COMPILER=gcc-10 -D CMAKE_CXX_COMPILER=g++-10 .. && make
-#-std=c++20 -fcoroutines -pthread
-```
