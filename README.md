@@ -110,7 +110,6 @@ cmake .. && make && src/section_1/01_joinability
 - [hardware_concurrency()](https://en.cppreference.com/w/cpp/thread/thread/hardware_concurrency): Returns the number of concurrent threads supported by the implementation (logical cores). The value should be considered only a hint.
 - [thread_local](https://en.cppreference.com/w/c/thread/thread_local): Macro specifying that a variable has thread-local storage duration; Each thread has its own, distinct, object. Initialization and destruction are bound to the thread.
 
-
 **More Examples**:
 - Exercise 1: [code](src/section_1/exercise_1.cpp)
 - Exercise 2: [code](src/section_1/exercise_2.cpp)
@@ -161,3 +160,12 @@ The most common problem in multithreading implementations are broken invariants 
   2. Or just use the predicated overload of `wait`, `wait_for`, and `wait_until`.
 - For maximum efficiency, `std::condition_variable` works only with `std::unique_lock<std::mutex>`, while `std::condition_variable_any` works only with any lock.
 - [example](src/section_3/01_condition_variable.cpp).
+
+**Synchronous vs Asynchronous Operations**: A synchronous operation blocks a process until the operation completes (mutexes). An asynchronous operation is non-blocking and the caller should check for completion through another mechanism.
+
+**Futures** [std::future](https://en.cppreference.com/w/cpp/thread/future) is a mechanism to access the result of asynchronous operations. The asynchronous operation provides an `std::future` object to the creator, that can be used to query, wait, or extract the value.
+
+**Asynchronous Operation Creation** TODO:
+- [std::promise](https://en.cppreference.com/w/cpp/thread/promise)
+- [std::packaged_task](https://en.cppreference.com/w/cpp/thread/packaged_task)
+- [std::async](https://en.cppreference.com/w/cpp/thread/async)
