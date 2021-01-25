@@ -11,7 +11,8 @@ Code for the Modern C++ Concurrency in Depth course from Udemy.
 ## TODO
 
 - jthread
-- futures
+- atomic
+- semaphores
 - latches and barriers
 - C++20 addons
 
@@ -21,10 +22,9 @@ Code for the Modern C++ Concurrency in Depth course from Udemy.
 sudo apt install gcc-10 g++-10 # C++20
 
 mkdir -p build && cd build
-cmake .. && make && src/section_1/01_joinability
+cmake -D CMAKE_C_COMPILER=gcc-10 -D CMAKE_CXX_COMPILER=g++-10 .. && make && src/section_1/01_joinability
 
-#cmake -D CMAKE_C_COMPILER=gcc-10 -D CMAKE_CXX_COMPILER=g++-10 .. && make
-#-std=c++20 -fcoroutines -pthread
+# -std=c++20 -fcoroutines -pthread
 ```
 
 ## C++ Thread Support Library
@@ -33,6 +33,7 @@ cmake .. && make && src/section_1/01_joinability
 - [Thread Management](#thread-management).
 - [Locking Mechanisms](#locking-mechanisms).
 - [Condition Variables and Futures](#condition-variables-and-futures).
+- [STL Containers and Algorithms](#stl-containers-and-algorithms).
 
 ### Basic Concepts
 
@@ -67,6 +68,7 @@ cmake .. && make && src/section_1/01_joinability
 - The idea is to handle matrix-like data using the GPU.
 - See: https://en.wikipedia.org/wiki/General-purpose_computing_on_graphics_processing_units
 
+In performance of parallel implementations is better if there is enough hardware to overcome the thread management and context switching costs.
 
 ### Thread Management
 
@@ -143,13 +145,6 @@ The most common problem in multithreading implementations are broken invariants 
 - The [std::unique_lock](https://en.cppreference.com/w/cpp/thread/unique_lock) is similar to `std::lock_guard`, but it does not have to acquire the lock during construction. It also allows time-constrained locking, recursive locking, conditional locking, and ownership transfer. In particular, the lock deferral allows acquiring multiple locks later using the `std::lock` function, as if `std::scoped_lock` were used.
 - [mutex, lock_guard, and scoped_lock examples](src/section_2/01_mutex.cpp), [unique_lock examples](src/section_2/05_unique_lock.cpp).
 
-**STL and Thread Safety** [STL container](https://en.cppreference.com/w/cpp/container):
-1. All container functions can be called concurrently by different threads on different containers.
-2. All `const` member functions can be called concurrently by different threads on the same container. Operations like `begin()`, `end()`, `rbegin()`, `rend()`, `front()`, `back()`, `data()`, `find()`, `lower_bound()`, `upper_bound()`, `equal_range()`, `at()`, and, except in associative containers, `operator[]`, behave as const for the purposes of thread safety.
-3. Different elements in the same container can be modified concurrently by different threads, except for the elements of `std::vector<bool>`.
-4. Iterator operations (e.g. incrementing an iterator) read, but do not modify the underlying container, and may be executed concurrently with operations on other iterators on the same container, with the const member functions, or reads from the elements. Container operations that invalidate any iterators modify the container and cannot be executed concurrently with any operations on existing iterators even if those iterators are not invalidated.
-5. Elements of the same container can be modified concurrently with those member functions that are not specified to access these elements.
-6. In any case, container operations (or any other STL functions) may be parallelized internally as long as this does not change the user-visible results.
 
 ### Condition Variables and Futures
 
@@ -171,3 +166,32 @@ The most common problem in multithreading implementations are broken invariants 
 - [std::promise](https://en.cppreference.com/w/cpp/thread/promise): Is the *push* end of the promise-future communication channel for a shared state. The promise allows setting the ready value, releasing the reference, or abandon with exception. The promise is meant to be used only once. See the examples: [promise](src/section_3/06_promise.cpp), [promise exception](src/section_3/07_promise_exception.cpp).
 
 **Shared Futures**: Once `get()` is called, the future object becomes invalid. Checking `valid()` is not enough, as a race condition exists. [std::shared_future](https://en.cppreference.com/w/cpp/thread/shared_future) is similar to `std::future`, but multiple threads are allowed to access the shared state. See the [example](src/section_3/08_shared_future.cpp).
+
+### STL Containers and Algorithms
+
+**STL and Thread Safety** [STL container](https://en.cppreference.com/w/cpp/container):
+1. All container functions can be called concurrently by different threads on different containers.
+2. All `const` member functions can be called concurrently by different threads on the same container. Operations like `begin()`, `end()`, `rbegin()`, `rend()`, `front()`, `back()`, `data()`, `find()`, `lower_bound()`, `upper_bound()`, `equal_range()`, `at()`, and, except in associative containers, `operator[]`, behave as const for the purposes of thread safety.
+3. Different elements in the same container can be modified concurrently by different threads, except for the elements of `std::vector<bool>`.
+4. Iterator operations (e.g. incrementing an iterator) read, but do not modify the underlying container, and may be executed concurrently with operations on other iterators on the same container, with the const member functions, or reads from the elements. Container operations that invalidate any iterators modify the container and cannot be executed concurrently with any operations on existing iterators even if those iterators are not invalidated.
+5. Elements of the same container can be modified concurrently with those member functions that are not specified to access these elements.
+6. In any case, container operations (or any other STL functions) may be parallelized internally as long as this does not change the user-visible results.
+
+**Execution Policies**: C++17 added [execution policies](https://en.cppreference.com/w/cpp/algorithm/execution_policy_tag_t) for algorithms to specify that they should run sequentially, in parallel, o
+r vectorized (sequentially, but with instructions that operate on multiple items).
+- If the implementation cannot parallelize or vectorize, e.g. due to lack of resources, all policies can fall back to sequential execution.
+- Some algorithms don't provide this feature, but the compiler can decide what is best. 
+- The policy affects the algorithm complexity, behavior on exceptions, and the used algorithm implementation.
+- The only exception that can be thrown is `std::bad_alloc`. Other unhandled exceptions will result in `std::terminate`.
+- See: [sort example](src/section_4/01_execution_policies.cpp).
+
+**Parallel STL-like algorithm examples**:
+- [quicksort design](src/section_4/02_quicksort.cpp): Parallel divide and conquer.
+- [for_each design](src/section_4/03_foreach.cpp): Parallel divide-and-conquer and parallel `packaged_task`.
+- [find](src/section_4/04_find.cpp): Early termination when found.
+
+**Factors Affecting the Performance of Concurrent Code**:
+- **Number of processors**: Using more threads than available processors leads to oversubscription and excessive task switching. Relying on `hardware_concurrency()` is not enough, as the application could launch threads we dont know about. `std::async` has *application level visibility of the number of threads launched by the application*, and thus, it automatically decides when to launch a thread or defer. If multiple multi-threaded application are running on the machine, it is best to use a global observer on the number of running threads.
+- **Data contention and cache ping pong**: Assuming each thread runs on a different core, the CPU is going to maintain a cache over the data for each thread. If both threads operate over the same data, whenever 1 thread performs write operations, the cache for the other threads needs to be updated! This is very slow. Even worse, the situation will repeat on every update.
+- **False Sharing**: Processor caches usually work by memory blocks (32 or 64 bytes) called *cache lines*. The line will be maintained even when we only acess to 8 bytes. *False sharing* happens when each thread operates on different variables, but these are kept under the same cache line, thus, leading to data contention.
+- **Closeness of the data**: When the data is sparse, a single thread will have to load multiple cache lines. This leads to more load/update operations and there wil be more uninteresting data in the cache.
