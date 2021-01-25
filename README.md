@@ -128,6 +128,15 @@ The most common problem in multithreading implementations are broken invariants 
 5. Elements of the same container can be modified concurrently with those member functions that are not specified to access these elements.
 6. In any case, container operations (or any other STL functions) may be parallelized internally as long as this does not change the user-visible results.
 
+### Condition Variables and Futures
+
+[std::condition_variable](https://en.cppreference.com/w/cpp/thread/condition_variable) is a synchronization primitive used to block one or multiple threads until another thread modifies the variable and notifies to it:
+- The notifier thread has to acquire a mutex to modify the variable (even if it is atomic). Then, it must execute `notify_one` or `notify_all` (no lock needed).
+- Waiting threads must acquire the same mutex and:
+  a. Check the condition. Execute `wait`, `wait_for`, or `wait_until`, atomically releasing the mutex. And awake on timeout, notification, or [spurious wakeup](https://en.wikipedia.org/wiki/Spurious_wakeup). Finally the condition must be checked to continue waiting or resume if needed.
+  b. Or just use the predicated overload of `wait`, `wait_for`, and `wait_until`.
+- For maximum efficiency, `std::condition_variable` works only with `std::unique_lock<std::mutex>`, while `std::condition_variable_any` works only with any lock.
+- [example](src/section_3/01_condition_variable.cpp).
 
 ## TODO
 

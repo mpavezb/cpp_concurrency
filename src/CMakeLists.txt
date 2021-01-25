@@ -5,3 +5,4 @@ target_link_libraries(0_thread pthread)
 
 add_subdirectory(section_1)
 add_subdirectory(section_2)
+add_subdirectory(section_3)

@@ -1,0 +1,4 @@
+project(section_3)
+
+add_executable(01_condition_variable 01_condition_variable.cpp)
+target_link_libraries(01_condition_variable pthread)
