@@ -5,3 +5,21 @@ target_link_libraries(01_condition_variable pthread)
 
 add_executable(02_futures 02_futures.cpp)
 target_link_libraries(02_futures pthread)
+
+add_executable(03_async 03_async.cpp)
+target_link_libraries(03_async pthread)
+
+add_executable(04_parallel_accumulate_async 04_parallel_accumulate_async.cpp)
+target_link_libraries(04_parallel_accumulate_async pthread)
+
+add_executable(05_packaged_task 05_packaged_task.cpp)
+target_link_libraries(05_packaged_task pthread)
+
+add_executable(06_promise 06_promise.cpp)
+target_link_libraries(06_promise pthread)
+
+add_executable(07_promise_exception 07_promise_exception.cpp)
+target_link_libraries(07_promise_exception pthread)
+
+add_executable(08_shared_future 08_shared_future.cpp)
+target_link_libraries(08_shared_future pthread)

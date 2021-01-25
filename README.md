@@ -163,9 +163,11 @@ The most common problem in multithreading implementations are broken invariants 
 
 **Synchronous vs Asynchronous Operations**: A synchronous operation blocks a process until the operation completes (mutexes). An asynchronous operation is non-blocking and the caller should check for completion through another mechanism.
 
-**Futures** [std::future](https://en.cppreference.com/w/cpp/thread/future) is a mechanism to access the result of asynchronous operations. The asynchronous operation provides an `std::future` object to the creator, that can be used to query, wait, or extract the value.
+**Futures**: [std::future](https://en.cppreference.com/w/cpp/thread/future) is a mechanism to access the result of asynchronous operations. The asynchronous operation provides an `std::future` object to the creator, that can be used to query, wait, or extract the value. See [example](src/section_3/02_futures.cpp).
 
-**Asynchronous Operation Creation** TODO:
-- [std::promise](https://en.cppreference.com/w/cpp/thread/promise)
-- [std::packaged_task](https://en.cppreference.com/w/cpp/thread/packaged_task)
-- [std::async](https://en.cppreference.com/w/cpp/thread/async)
+**Asynchronous Operation Creation**:
+- [std::async](https://en.cppreference.com/w/cpp/thread/async): Allows running a function asynchronously, given a launch policy, function, and its arguments. Returns `std::future`. The [std::launch](https://en.cppreference.com/w/cpp/thread/launch) policy can be either `async` (new thread is created), `deferred` (lazy evaluation), or both of them (let the compiler decide). See: [example 1](src/section_3/03_async.cpp), [example 2](src/section_3/04_parallel_accumulate_async.cpp).
+- [std::packaged_task](https://en.cppreference.com/w/cpp/thread/packaged_task): Wraps any callable target so that it can be invoked asynchronously. Returns value or exception on a `std::future` object. The invocation must be explicitely triggered. The wrapper can be moved to any thread, giving control over where it will execute. See: [example 1](src/section_3/05_packaged_task.cpp).
+- [std::promise](https://en.cppreference.com/w/cpp/thread/promise): Is the *push* end of the promise-future communication channel for a shared state. The promise allows setting the ready value, releasing the reference, or abandon with exception. The promise is meant to be used only once. See the examples: [promise](src/section_3/06_promise.cpp), [promise exception](src/section_3/07_promise_exception.cpp).
+
+**Shared Futures**: Once `get()` is called, the future object becomes invalid. Checking `valid()` is not enough, as a race condition exists. [std::shared_future](https://en.cppreference.com/w/cpp/thread/shared_future) is similar to `std::future`, but multiple threads are allowed to access the shared state. See the [example](src/section_3/08_shared_future.cpp).
