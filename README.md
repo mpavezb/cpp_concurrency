@@ -7,14 +7,7 @@ Code for the Modern C++ Concurrency in Depth course from Udemy.
 - https://en.cppreference.com/w/cpp/thread/thread
 - https://en.cppreference.com/w/cpp/utility/functional/ref
 - Course source code: https://github.com/kasunindikaliyanage/cpp_concurrency_masterclass
-
-## TODO
-
-- jthread
-- atomic
-- semaphores
-- latches and barriers
-- C++20 addons
+- C++ Compiler Support: https://en.cppreference.com/w/cpp/compiler_support
 
 ## Building the code
 
@@ -23,8 +16,6 @@ sudo apt install gcc-10 g++-10 # C++20
 
 mkdir -p build && cd build
 cmake -D CMAKE_C_COMPILER=gcc-10 -D CMAKE_CXX_COMPILER=g++-10 .. && make && src/section_1/01_joinability
-
-# -std=c++20 -fcoroutines -pthread
 ```
 
 ## C++ Thread Support Library
@@ -34,6 +25,8 @@ cmake -D CMAKE_C_COMPILER=gcc-10 -D CMAKE_CXX_COMPILER=g++-10 .. && make && src/
 - [Locking Mechanisms](#locking-mechanisms).
 - [Condition Variables and Futures](#condition-variables-and-futures).
 - [STL Containers and Algorithms](#stl-containers-and-algorithms).
+- [C++20 Addons](#c-20-addons).
+- [Memory Model and Atomic Operations](#memory-model-and-atomic-operations).
 
 ### Basic Concepts
 
@@ -195,3 +188,37 @@ r vectorized (sequentially, but with instructions that operate on multiple items
 - **Data contention and cache ping pong**: Assuming each thread runs on a different core, the CPU is going to maintain a cache over the data for each thread. If both threads operate over the same data, whenever 1 thread performs write operations, the cache for the other threads needs to be updated! This is very slow. Even worse, the situation will repeat on every update.
 - **False Sharing**: Processor caches usually work by memory blocks (32 or 64 bytes) called *cache lines*. The line will be maintained even when we only acess to 8 bytes. *False sharing* happens when each thread operates on different variables, but these are kept under the same cache line, thus, leading to data contention.
 - **Closeness of the data**: When the data is sparse, a single thread will have to load multiple cache lines. This leads to more load/update operations and there wil be more uninteresting data in the cache.
+
+### C++20 Addons
+
+**JThread**: [std::jthread](https://en.cppreference.com/w/cpp/thread/jthread) has the same general behavior as `std::thread`, but it automatically rejoins on destruction (RAII) and can be cancelled/stopped on certain situations. See the [example](src/section_5/01_jthread.cpp).
+- The [std::stop_token](https://en.cppreference.com/w/cpp/thread/stop_token) can be added as a function argument in order to introduce interrupt points in the thread. This argument will be provided by the `jthread` constructor.
+- The [request_stop()](https://en.cppreference.com/w/cpp/thread/jthread/request_stop) method issues a stop request to the jthread. If no `stop_token` is used, then the request is ignored.
+- The destructor [~jthread()](https://en.cppreference.com/w/cpp/thread/jthread/%7Ejthread) calls `request_stop()` and then `join()`.
+
+**Coroutines**: [coroutines](https://en.cppreference.com/w/cpp/language/coroutines). Coroutines are functions which can be suspended and resumed. See the [example](src/section_5/02_coroutines.cpp).
+- **Subroutines and Coroutines**:
+  - **Subroutines**: Refer to normal functions and work on two stages, invocation and finalization. During invocation they push their code into the execution stack. Finalization is triggered when the function goes out of scope. and the stack is cleared. The callers are blocked until finalization.
+  - **Coroutines**: They add 2 more stages, suspend and resume. The coroutine can opt to suspend its own execution, and the owner of the handler can resume it. Whenever a function contains the keywords `co_await`, `co_yield`, or `co_return`, the compiler considers it as a coroutine.
+- **Heap and Stack**: Coroutines are created in the heap and in suspended state. When the execution resumes, their core is copied into the caller stack. When the coroutine suspends, the heap object is updated using the values from the stack. Coroutines do not use the stack by themselves, but only to copy-from and update the heap.
+- **Components**: A coroutine consists of 3 parts: A promise, a handle, and coroutine state.
+  1. The `promise_type`: is user defined, its manipulated from inside the coroutine, and it allows returning the result. It is not related to `std::promise`!.
+  2. The handle: is non-owning and it is used to resume or destroy the coroutine from outside.
+  3. The state: is typically heap allocated, contains the promise object, arguments, and local variables.
+- **Generators**: Coroutines can be used to implement lazy generators. These are based on the `co_yield` keyword. See [example](src/section_05/03_generators.cpp).
+
+**Barriers and Latches**: 
+- [std::barrier](https://en.cppreference.com/w/cpp/thread/barrier) is a synchronization mechanism that forces all threads to wait until all of them reach certain point in code. Barriers are reusable.
+- [std::latch](https://en.cppreference.com/w/cpp/thread/latch) is similar to `std::barrier`, but it has a single use.
+- Both `std::barrier` and `std::latch` are provided by the `<barrier>` and `<latch>` headers. These are not supported in gcc-10. However, `<boost/thread/barrier>` can be used as a replacement.
+
+
+### Memory Model and Atomic Operations
+
+
+
+### TODO
+
+C++20:
+- [std::counting_semaphore](https://en.cppreference.com/w/cpp/thread/counting_semaphore)
+
