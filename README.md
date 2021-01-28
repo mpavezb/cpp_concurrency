@@ -4,13 +4,16 @@ Code for the Modern C++ Concurrency in Depth course from Udemy.
 
 ## Resources
 
-- https://en.cppreference.com/w/cpp/thread/thread
-- https://en.cppreference.com/w/cpp/utility/functional/ref
-- Course source code: https://github.com/kasunindikaliyanage/cpp_concurrency_masterclass
+Docs:
 - C++ Compiler Support: https://en.cppreference.com/w/cpp/compiler_support
+- Course source code: https://github.com/kasunindikaliyanage/cpp_concurrency_masterclass
 
 Relevant Talks:
 - [CppCon 2017: Fedor Pikus, C++ atomics, from basic to advanced. What do they really do?](https://www.youtube.com/watch?v=ZQFzMfHIxng): How atomics work, atomic (lock free) vs mutex-based, dealing with issues.
+
+To Add:
+- [std::counting_semaphore](https://en.cppreference.com/w/cpp/thread/counting_semaphore).
+- [memory_model](https://en.cppreference.com/w/cpp/language/memory_model).
 
 ## Building the code
 
@@ -237,7 +240,6 @@ r vectorized (sequentially, but with instructions that operate on multiple items
   - `compare_exchange_weak()`: Does not guarantees operation to be successful, even if they expected is equal to the current value. It may happen when the machine does not have the *compare_exchange* instruction (like in RISC processors used in ARM). However, this is usually faster to execute and the operation could be repeated.
   - `compare_exchange_strong()`: Guarantees to be atomic and successful, but it may use more than one instruction.
   - Compare-and-exchange operations are often used as basic building blocks of lockfree algorithms and data structures. These are based on while statements like: `std::atomic<int> x{0}; int x0 = x; while(!x.compare_exchange_strong(x0, x0+1)) {}`, `x0` will have a proper value after completion, even on multithreading apps. Notice how the CAS allows lock-free multithreading.
-  - TODO: WHY IS THIS FUNCTION SO IMPORTANT?
 
 **Relevant Atomic Types**:
 - [atomic_flag](https://en.cppreference.com/w/cpp/atomic/atomic_flag): Atomic boolean type guaranteed to be lock free. All other types provide `is_lock_free()` (value depends on the OS). The API is limited compared to `std::atomic<bool>`.
@@ -305,10 +307,10 @@ r vectorized (sequentially, but with instructions that operate on multiple items
 - Lock-Free: Some thread makes progress with every step.
 - Wait-Free: Every thread makes progress regardless of the others.
 
-**Memory Reclaim Mechanisms**: TODO. NEEDS CHECKING AND REWRITE.
+**Memory Reclaim Mechanisms**: (TODO: Needs refinement)
 - **Thread Counting**: If the thread count is more than 1, then the critical operation is added to a list of pending critical operations (e.g, list of to be deleted objects). When the thread count becomes 1, then the last thread takes care of the pending operations.
 - **Hazard Pointers**: Maintain a list of *hazard pointers*. When a thread needs to access a node that is going to be deleted by another thread, it must set the hazard pointer for that node in the list. The hazard pointer list contains the thread id and the pointer address. When a thread wants to delete any node, it must check the list beforehand. If the address is listed, then another thread also wants to delete the node. In that case, the second thread does not delete it, but stores it into the pending list.
-- **Reference Counting**: There are many implementation. In this one, there is an external and one internal counter. The external counter is increased for every time the pointer is read. When the reader has completed the use of the resource, it decreases the internal count. The sum of these values is the total number of references to the resource.
+- **Reference Counting**: There are many implementations. In this one, there is an external and one internal counter. The external counter is increased for every time the pointer is read. When the reader has completed the use of the resource, it decreases the internal count. The sum of these values is the total number of references to the resource.
 
 **Examples**:
 - [lock-free stack (incomplete)](src/section_7/01_lock_free_stack.cpp).
@@ -322,24 +324,3 @@ Normal threads have to be manually managed regarding their lifecycle and the ass
 - When the number of processors increases, there is increasing *contention* on the queue. In this scenario, cache ping-pong can be a great time sink. A way to avoid ping-pong is to use a separate work queue for each thread. Each thread then takes work from the global work queue when its own local queue is empty.
 - Work Stealing: Waiting threads can be implemented to steal work from threads with full queues. This can be handled by a specialized *work stealing queue*, which allows to steal workload from the back.
 
-### TODOs
-
-- Look for TODOs
-- C++20: [std::counting_semaphore](https://en.cppreference.com/w/cpp/thread/counting_semaphore)
-- Memory Model: [memory_model](https://en.cppreference.com/w/cpp/language/memory_model) 
-
-```c++
-// =============================================================================
-// Example:
-// =============================================================================
-
-// TODO: Memory locations:
-// See: https://en.cppreference.com/w/cpp/language/memory_model
-struct S {
-  char a;     // location #1: pos 0
-  int b : 5;  // location #2: pos 5
-  int c : 11, // location #2:
-      : 0,    //
-      d : 8;
-};
-```
