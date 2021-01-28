@@ -31,6 +31,7 @@ cmake -D CMAKE_C_COMPILER=gcc-10 -D CMAKE_CXX_COMPILER=g++-10 .. && make && src/
 - [C++20 Addons](#c-20-addons).
 - [Memory Model and Atomic Operations](#memory-model-and-atomic-operations).
 - [Lock Free Data Structures And Algorithms](#lock-free-data-structures-and-algorithms).
+- [Thread Pools](#thread-pools).
 
 ### Basic Concepts
 
@@ -209,7 +210,7 @@ r vectorized (sequentially, but with instructions that operate on multiple items
   1. The `promise_type`: is user defined, its manipulated from inside the coroutine, and it allows returning the result. It is not related to `std::promise`!.
   2. The handle: is non-owning and it is used to resume or destroy the coroutine from outside.
   3. The state: is typically heap allocated, contains the promise object, arguments, and local variables.
-- **Generators**: Coroutines can be used to implement lazy generators. These are based on the `co_yield` keyword. See [example](src/section_05/03_generators.cpp).
+- **Generators**: Coroutines can be used to implement lazy generators. These are based on the `co_yield` keyword. See [example](src/section_5/03_generators.cpp).
 
 **Barriers and Latches**: 
 - [std::barrier](https://en.cppreference.com/w/cpp/thread/barrier) is a synchronization mechanism that forces all threads to wait until all of them reach certain point in code. Barriers are reusable.
@@ -296,8 +297,30 @@ r vectorized (sequentially, but with instructions that operate on multiple items
 
 ### Lock Free Data Structures And Algorithms
 
+**Blocking and Non-Blocking Data Structures and Algorithms**:
+- Blocking: Use mutex, condition variables, and futures to synchronize the data.
+- Non-Blocking: Don't use blocking mechanisms.
+
+**Lock-Free vs Wait Free Data Structures**:
+- Lock-Free: Some thread makes progress with every step.
+- Wait-Free: Every thread makes progress regardless of the others.
+
+**Memory Reclaim Mechanisms**: TODO. NEEDS CHECKING AND REWRITE.
+- **Thread Counting**: If the thread count is more than 1, then the critical operation is added to a list of pending critical operations (e.g, list of to be deleted objects). When the thread count becomes 1, then the last thread takes care of the pending operations.
+- **Hazard Pointers**: Maintain a list of *hazard pointers*. When a thread needs to access a node that is going to be deleted by another thread, it must set the hazard pointer for that node in the list. The hazard pointer list contains the thread id and the pointer address. When a thread wants to delete any node, it must check the list beforehand. If the address is listed, then another thread also wants to delete the node. In that case, the second thread does not delete it, but stores it into the pending list.
+- **Reference Counting**: There are many implementation. In this one, there is an external and one internal counter. The external counter is increased for every time the pointer is read. When the reader has completed the use of the resource, it decreases the internal count. The sum of these values is the total number of references to the resource.
+
+**Examples**:
+- [lock-free stack (incomplete)](src/section_7/01_lock_free_stack.cpp).
 
 
+### Thread Pools
+
+Normal threads have to be manually managed regarding their lifecycle and the associated functions. *Thread Pools* contain automatically managed threads with an API that allows adding taks into a work queue of pending tasks. The pool feeds from the queue as soon as slot is available. `std::future` can be used to wait for tasks to be completed. Some considerations when implementing thread pools:
+- When all threads are locked waiting on another tasks to finish, that time should not be wasted just on waiting, but used to run other pending tasks. Also, this helps to avoid deadlocks!.
+- Contention: When accessing the global work queue, there is a performance penalty due to shared memory read/write and synchronization between threads.
+- When the number of processors increases, there is increasing *contention* on the queue. In this scenario, cache ping-pong can be a great time sink. A way to avoid ping-pong is to use a separate work queue for each thread. Each thread then takes work from the global work queue when its own local queue is empty.
+- Work Stealing: Waiting threads can be implemented to steal work from threads with full queues. This can be handled by a specialized *work stealing queue*, which allows to steal workload from the back.
 
 ### TODOs
 
