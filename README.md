@@ -9,6 +9,9 @@ Code for the Modern C++ Concurrency in Depth course from Udemy.
 - Course source code: https://github.com/kasunindikaliyanage/cpp_concurrency_masterclass
 - C++ Compiler Support: https://en.cppreference.com/w/cpp/compiler_support
 
+Relevant Talks:
+- [CppCon 2017: Fedor Pikus, C++ atomics, from basic to advanced. What do they really do?](https://www.youtube.com/watch?v=ZQFzMfHIxng): How atomics work, atomic (lock free) vs mutex-based, dealing with issues.
+
 ## Building the code
 
 ```bash
@@ -215,10 +218,88 @@ r vectorized (sequentially, but with instructions that operate on multiple items
 
 ### Memory Model and Atomic Operations
 
+**Atomic Operation:** Indivisible operation. It cannot be observed half-done from any thread in the system. If one thread writes to an atomic object while another thread reads from it, the behavior is well-defined.
 
+**Lock-Free vs. Lock-Based**: Atomics allow writting lock-free multithreading, meaning there is no need to use any synchronization primitive.
 
-### TODO
+**Atomic Type**: Refers to a type where all operations on it are considered atomic. The [std::atomic](https://en.cppreference.com/w/cpp/atomic/atomic) template class allows defining atomic types and C++ provides several atomics for primitive types.
+- Accesses to `std::atomic` objects may establish inter-thread synchronization and order non-atomic memory accesses as specified by `std::memory_order`.
+- `std::atomic<>` is copy- and move- disabled. However, atomics can be set and constructed using variables from the non-atomic type. In particular, it can be instantiated with any *TriviallyCopyable* type, that satisfies *CopyConstructible* and *CopyAssignable*.
 
-C++20:
-- [std::counting_semaphore](https://en.cppreference.com/w/cpp/thread/counting_semaphore)
+**Relevant std::atomic functions:**
+- `is_lock_free()`: Check if compiler added internal locks. Depends on OS.
+- `store(T), load()`: Write new value based on atomic or non-atomic variable. Read current value. Using these functions instead of implicit read/write is preferred for cognitive purposes.
+- `exchange(T)`: Atomically replace the value with a new one and return the old one (atomic swap).
+- [compare_exchange](https://en.cppreference.com/w/cpp/atomic/atomic/compare_exchange): Is a conditional swap. It is also called *Compare-and-Swap* (CAS):
+- Given the signature `compare_exchange_*(T& expected, T desired)`, where `expected` refers to the value we expect to see when calling `load()`, and `desired` refers to the new value we would like to set. If `current_value == expected`, sets `current_value = desired` and returns `true`.  Otherwise, sets `expected = current_value` and returns `false`. In other words, if the expectation matches, performs an update. Otherwise, signals the caller that the expectation failed.
+  - `compare_exchange_weak()`: Does not guarantees operation to be successful, even if they expected is equal to the current value. It may happen when the machine does not have the *compare_exchange* instruction (like in RISC processors used in ARM). However, this is usually faster to execute and the operation could be repeated.
+  - `compare_exchange_strong()`: Guarantees to be atomic and successful, but it may use more than one instruction.
+  - Compare-and-exchange operations are often used as basic building blocks of lockfree algorithms and data structures. These are based on while statements like: `std::atomic<int> x{0}; int x0 = x; while(!x.compare_exchange_strong(x0, x0+1)) {}`, `x0` will have a proper value after completion, even on multithreading apps. Notice how the CAS allows lock-free multithreading.
+  - TODO: WHY IS THIS FUNCTION SO IMPORTANT?
 
+**Relevant Atomic Types**:
+- [atomic_flag](https://en.cppreference.com/w/cpp/atomic/atomic_flag): Atomic boolean type guaranteed to be lock free. All other types provide `is_lock_free()` (value depends on the OS). The API is limited compared to `std::atomic<bool>`.
+- `std::atomic<U*>`: Atomic pointer. The pointed object is not atomic. Also support atomic arithmetic operations: `fetch_add`, `+=`, `fetch_sub`, `-=`, `++`, `--`. `std::atomic<std::shared_ptr<U>>` and `std::atomic<std::weak_ptr<U>>` are also available.
+
+**Atomics and False Sharing**: Atomics are also affected by the false sharing issue, specially for writting. They have to wait for cache line access. This can be avoided by aligning per-thread data to separate cache lines, or even multiple pages.
+
+**Atomics as gateways to Memory Access**:
+- Atomics are used to get exclusive access to memory or to real memory to other threads. They can be used as generalized pointers!. See the [example](src/section_6/01_atomic.cpp) on atomic structures:
+  1. Acquire Exclusive Access: `std::atomic<T>` as an array index can be used as a *pointer to variable*. Using `fetch_add` we can get exclusive access to an index (memory location) which other threads won't be able to access.
+  2. Release into Shared Access: `std::atomic<U*>` can be used as a generalized pointer, allowing swapping the pointer to another memory location atomically. Thus, revealing new memory to other threads (e.g. update head of linked list).
+- Most memory is not atomic!, but atomics are used as handlers to avoid race conditions.
+
+**Memory Barriers**: They control how changes to memory made by one CPU become visible to other CPUs. Memory is layered into registers, cache(s), and main memory. The visibility refers to the moment when a desired layer is set with up-to-date information. Understanding memory barriers is essential to understand atomics and memory guarantees.
+- They are important as, by default, there is no guarantee of visibility. Threads could just keep modifying their own caches and never be aware of the updates. Visibility of non-atomic changes is not guaranteed.
+- They are a global control of visibility across all CPUs. Synchronization of data access is not possible if we cannot control the order of memory access.
+- They are implemented by the hardware. They are invoked through processor-specific instructions.
+- They are often attributes on atomic read/write operations, ensuring specified order of reads and writes.
+
+**Available Memory Barriers** (see [std::memory_order](https://en.cppreference.com/w/cpp/atomic/memory_order)):
+  - `std::memory_order_relaxed`: No memory barrier. There is no guaranteed ordering constraints imposed on other reads and writes. Only this operation atomicity is guaranteed.
+  - `std::memory_order_acquire`: The *half-barrier*. Guarantees that all memory operations scheduled after the barrier, including operations on other variables, become visible after the barrier. Reads/Writes cannot be reordered before the barrier. However, operations before the barrier can be reordered or even moved after the barrier. Only valid for the thread that issued the barrier.
+  - `std::memory_order_release`: Reverse of the acquire barrier. Nothing that was before can be observed after the barrier. But operations after the barrier may be reordered before it. It guarantees all operations before it become visible.
+  - `std::memory_order_acq_rel`: Combines both. No operation can move across the barrier. But only if both threads use the same atomic variable!.
+  - `std::memory_order_seq_cst` (default): The Sequential Consistency is the most strict barrier. It forces load operations to performs an acquire, store to perform a release, and read-modify-write to perform both. If enforces a single total order in which all threads observe all modifications in the same order.
+  - `std::memory_order_consume`: TODO
+  
+**Memory Barrier Protocols**: See the [example](src/section_6/02_memory_barriers.cpp). More patterns can be found in the [official documentation](https://en.cppreference.com/w/cpp/atomic/memory_order).
+- **Release-Acquire Protocol**: Thread 1 writes data on atomic variable (releases) using the release barrier, while thread 2 reads data from the same variable (acquires) using the acquire barrier. There is a guarantee than the released atomic (and other variables set before it) is visible when acquired.
+- **Release-Consume Protocol**: TODO
+
+**Memory Barrier Considerations**:
+- The strongest memory order *may* be too expensive in terms of time and cognitive load!:
+  - Sequential consistency makes the program easier to read and often has no performance penalty!.
+  - Making every operation `seq_cst` is not necessary and obscures programmer's intent.
+  - Use memory order to express programmer's intent.
+- Not all platforms provide all barriers.
+- In some platforms, some barriers are cheap: On x86, all loads are acquire (for free) and all stores are release (for free), but trying to use load-release and store-acquire is expensive. Also, there is no difference between `acq_rel` and `seq_cst`.
+- Use the right barrier!.
+
+**When to use std::atomic**:
+- High-performance concurrent lock-free data structures (benchmark it!).
+- Data structures that are difficult or expensive to implement with locks (lists, trees).
+- When lock problems are important: deadlocks, priority, latency.
+- When concurrent synchronization can be achieved by the cheapest atomic operations: store and load.
+
+### TODOs
+
+- Look for TODOs
+- C++20: [std::counting_semaphore](https://en.cppreference.com/w/cpp/thread/counting_semaphore)
+- Memory Model: [memory_model](https://en.cppreference.com/w/cpp/language/memory_model) 
+
+```c++
+// =============================================================================
+// Example:
+// =============================================================================
+
+// TODO: Memory locations:
+// See: https://en.cppreference.com/w/cpp/language/memory_model
+struct S {
+  char a;     // location #1: pos 0
+  int b : 5;  // location #2: pos 5
+  int c : 11, // location #2:
+      : 0,    //
+      d : 8;
+};
+```
