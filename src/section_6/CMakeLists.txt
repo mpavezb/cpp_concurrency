@@ -5,3 +5,9 @@ target_link_libraries(01_atomic pthread)
 
 add_executable(02_memory_barriers 02_memory_barriers.cpp)
 target_link_libraries(02_memory_barriers pthread)
+
+add_executable(03_transitive_synchronization 03_transitive_synchronization.cpp)
+target_link_libraries(03_transitive_synchronization pthread)
+
+add_executable(04_spinlock_mutex 04_spinlock_mutex.cpp)
+target_link_libraries(04_spinlock_mutex pthread)

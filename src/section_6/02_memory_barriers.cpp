@@ -56,8 +56,8 @@ void rel_con_consumer() {
   std::cout << "Consumed data   '" << data2 << "'" << std::endl;
 
   assert(*p2 == "Hello"); // never fires: *p2 carries dependency from ptr2
-  assert(data2 ==
-         42); // may or may not fire: data2 does not carry dependency from ptr2
+  assert(data2 == 42);    // may or may not fire: data2 does not carry a
+                          // dependency from ptr2
 }
 
 void release_consume_example() {

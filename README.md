@@ -30,6 +30,7 @@ cmake -D CMAKE_C_COMPILER=gcc-10 -D CMAKE_CXX_COMPILER=g++-10 .. && make && src/
 - [STL Containers and Algorithms](#stl-containers-and-algorithms).
 - [C++20 Addons](#c-20-addons).
 - [Memory Model and Atomic Operations](#memory-model-and-atomic-operations).
+- [Lock Free Data Structures And Algorithms](#lock-free-data-structures-and-algorithms).
 
 ### Basic Concepts
 
@@ -249,7 +250,16 @@ r vectorized (sequentially, but with instructions that operate on multiple items
   2. Release into Shared Access: `std::atomic<U*>` can be used as a generalized pointer, allowing swapping the pointer to another memory location atomically. Thus, revealing new memory to other threads (e.g. update head of linked list).
 - Most memory is not atomic!, but atomics are used as handlers to avoid race conditions.
 
-**Memory Barriers**: They control how changes to memory made by one CPU become visible to other CPUs. Memory is layered into registers, cache(s), and main memory. The visibility refers to the moment when a desired layer is set with up-to-date information. Understanding memory barriers is essential to understand atomics and memory guarantees.
+**Memory Model**: In todays processors, memory is layered into core registers, L1 cache, store buffers, L2 cache, L3 cache, and main memory. Registers and L1 cache are processor specific, next layers are shared between groups of cores, and the main memory is shared between all the cores.
+- Memory operations (read/write) are propagated between the cores and the memory; *Write* operations are propagated from the core up to the main memory, and *read* operations are propagated from the memory down to the core. Sometimes the propagation is delayed, it may only reach an internal layer, or even the operation ordering may be switched!.
+- The source code may not reflect what really happens in the hardware:
+  1. Compilers may perform subexpression elimination and allocate registers.
+  2. Caches may use *store buffers*, or may be shared between some of the cores.
+  3. Processors may perform prefetch, speculate, or overlap writes.
+- Both mutexes and memory barriers are a way to impose restrictions on what alterations may happen.
+- Imposing ordering restrictions into the operations, may result into additional `store` operations, additional cache refresh, and it may even restrict the instruction reordering for optimizations.
+
+**Memory Barriers**: They control how changes to memory made by one CPU become visible to other CPUs. The visibility refers to the moment when a desired memory layer is set with up-to-date information. Understanding memory barriers is essential to understand atomics and memory guarantees.
 - They are important as, by default, there is no guarantee of visibility. Threads could just keep modifying their own caches and never be aware of the updates. Visibility of non-atomic changes is not guaranteed.
 - They are a global control of visibility across all CPUs. Synchronization of data access is not possible if we cannot control the order of memory access.
 - They are implemented by the hardware. They are invoked through processor-specific instructions.
@@ -260,12 +270,12 @@ r vectorized (sequentially, but with instructions that operate on multiple items
   - `std::memory_order_acquire`: The *half-barrier*. Guarantees that all memory operations scheduled after the barrier, including operations on other variables, become visible after the barrier. Reads/Writes cannot be reordered before the barrier. However, operations before the barrier can be reordered or even moved after the barrier. Only valid for the thread that issued the barrier.
   - `std::memory_order_release`: Reverse of the acquire barrier. Nothing that was before can be observed after the barrier. But operations after the barrier may be reordered before it. It guarantees all operations before it become visible.
   - `std::memory_order_acq_rel`: Combines both. No operation can move across the barrier. But only if both threads use the same atomic variable!.
-  - `std::memory_order_seq_cst` (default): The Sequential Consistency is the most strict barrier. It forces load operations to performs an acquire, store to perform a release, and read-modify-write to perform both. If enforces a single total order in which all threads observe all modifications in the same order.
-  - `std::memory_order_consume`: TODO
+  - `std::memory_order_seq_cst` (default): The Sequential Consistency is the most strict barrier. It forces `load` operations to performs acquire, `store` operations to perform release, and read-modify-write to perform both. If enforces a single total order in which all threads observe all modifications in the same order. The behavior of the program is consistent with a simple sequential view of the code.
+  - `std::memory_order_consume`: Special case of acquire that limits the synchronization of data to direct dependencies. The *carries-a-dependency-to* relationship applies within a thread, and happens when the result of an operation is used as an operand for the atomic variable of interest.
   
 **Memory Barrier Protocols**: See the [example](src/section_6/02_memory_barriers.cpp). More patterns can be found in the [official documentation](https://en.cppreference.com/w/cpp/atomic/memory_order).
 - **Release-Acquire Protocol**: Thread 1 writes data on atomic variable (releases) using the release barrier, while thread 2 reads data from the same variable (acquires) using the acquire barrier. There is a guarantee than the released atomic (and other variables set before it) is visible when acquired.
-- **Release-Consume Protocol**: TODO
+- **Release-Consume Protocol**: Similar to the protocol above, but the acquire barrier is relaxed to only restrict dependencies.
 
 **Memory Barrier Considerations**:
 - The strongest memory order *may* be too expensive in terms of time and cognitive load!:
@@ -276,11 +286,18 @@ r vectorized (sequentially, but with instructions that operate on multiple items
 - In some platforms, some barriers are cheap: On x86, all loads are acquire (for free) and all stores are release (for free), but trying to use load-release and store-acquire is expensive. Also, there is no difference between `acq_rel` and `seq_cst`.
 - Use the right barrier!.
 
+**Transitive Synchronization**: It allows synchronizing 3 threads without having any release/acquire ordering mechanism. If threads `A->B` (A is synchronized with B, where commands in A happen before the ones in B) and `B->C`, then `A->C`. See the [example](src/section_6/03_transitive_synchronization.cpp).
+
 **When to use std::atomic**:
 - High-performance concurrent lock-free data structures (benchmark it!).
 - Data structures that are difficult or expensive to implement with locks (lists, trees).
 - When lock problems are important: deadlocks, priority, latency.
 - When concurrent synchronization can be achieved by the cheapest atomic operations: store and load.
+
+### Lock Free Data Structures And Algorithms
+
+
+
 
 ### TODOs
 
